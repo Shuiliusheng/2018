@@ -1,0 +1,664 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+//同步信号定义
+broadcast chan trainEnter[2];
+broadcast chan trainLeave[2];
+chan trainRequest[2];
+
+chan red[6],green[6];
+chan dogreen[6],dored[6];
+
+chan checkoccupied[5];
+chan occupied[5],unoccupied[5];
+
+chan dolock[2],dounlock[2];
+
+//基本符号定义
+const int red_on=0;
+const int green_on=1;
+const int NO_POINT=0;
+const int POINT=1;
+const int OCCUPIED=1;
+const int UNOCCUPIED=0;
+const int LOCK=0;
+const int UNLOCK=1;
+
+
+int track_y[5];
+int light_is[6];
+int point_is_lock[2];
+
+
+//辅助变量
+int train_n;//指名第几辆火车
+int track_n;//指名第几节轨道
+int light_n;//指名第几个信号灯
+int point_n;//指名第几个道岔
+int use_point;//指名需不需要判断道岔
+chan next_step;//用于同步火车经过一次轨道结束到下次火车的开始调度进入
+
+
+//时间约束
+clock light_time;       //Center 模型收到 request 消息到列车接收到交通灯回馈的消息之间的时间为 21s
+clock run_time;         //火车运行时间
+clock check_track_time;//Center 模型发出 checkoccupied 消息到收到 Center 模型发出反馈消息之间的时间少于4s
+clock lock_time;       //Center 模型发出 dolock 消息到收到 locked 消息之间的时间少于 4s
+clock green_open_time;//Center 模型发出 dogreen 消息到收到 green 消息时间之间的时间少于 4s
+clock trainenter_time;//Center 模型收到 green 消息到收到 trainEnter 消息之间的时间少于 10s
+clock train_run_time; //Center 模型收到 trainEnter 消息到收到 trainLeave 消息之间的时间少于 200s
+clock unlock_time;    //Center 模型发出 dounlock 消息到收到 unlocked 消息之间的时间少于 4s
+clock red_open_time;  //Center 模型发出 dored 消息到收到 red 消息之间的时间少于 4s
+</declaration>
+	<template>
+		<name x="5" y="5">Train</name>
+		<declaration>// 火车</declaration>
+		<location id="id0" x="-1130" y="-714">
+			<name x="-1189" y="-697">train_enter</name>
+		</location>
+		<location id="id1" x="-960" y="-714">
+			<name x="-968" y="-697">train_green_on</name>
+		</location>
+		<location id="id2" x="-960" y="-816">
+			<name x="-968" y="-850">train_wait</name>
+		</location>
+		<location id="id3" x="-1130" y="-816">
+			<name x="-1189" y="-850">train_start</name>
+		</location>
+		<init ref="id3"/>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-1104" y="-901">light_is[light_n]==red_on
+&amp;&amp;light_time==21</label>
+			<nail x="-1011" y="-859"/>
+			<nail x="-1071" y="-859"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-1257" y="-782">run_time==150</label>
+			<label kind="synchronisation" x="-1257" y="-765">trainLeave[train_n]!</label>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="-1096" y="-740">trainEnter[train_n]!</label>
+			<label kind="assignment" x="-1079" y="-714">run_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="-951" y="-782">light_time==21</label>
+			<label kind="synchronisation" x="-951" y="-765">green[light_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-1104" y="-808">trainRequest[train_n]!</label>
+		</transition>
+	</template>
+	<template>
+		<name>Light</name>
+		<declaration>//信号灯
+void init_light(int&amp; light_is[6])
+{
+  for (i : int[0,5]) 
+  {
+    light_is[i] = red_on;
+  }
+}</declaration>
+		<location id="id4" x="-153" y="-59">
+			<name x="-162" y="-51">light_GREEN</name>
+		</location>
+		<location id="id5" x="-331" y="-59">
+			<name x="-408" y="-51">light_open_red</name>
+		</location>
+		<location id="id6" x="-153" y="-161">
+			<name x="-162" y="-195">light_open_green</name>
+		</location>
+		<location id="id7" x="-331" y="-161">
+			<name x="-382" y="-195">light_RED</name>
+		</location>
+		<location id="id8" x="-450" y="-161">
+			<name x="-484" y="-195">light_init</name>
+		</location>
+		<init ref="id8"/>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id7"/>
+			<label kind="synchronisation" x="-408" y="-119">red[light_n]!</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-289" y="-51">dored[light_n]?</label>
+			<label kind="assignment" x="-314" y="-85">light_is[light_n]=red_on</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-153" y="-119">green[light_n]!</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-306" y="-187">dogreen[light_n]?</label>
+			<label kind="assignment" x="-323" y="-153">light_is[light_n]=green_on</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="assignment" x="-442" y="-153">init_light(light_is)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Track</name>
+		<declaration>//轨道
+void init_track(int&amp; track_y[5])
+{
+  for (i : int[0,4]) 
+  {
+    track_y[i] = UNOCCUPIED;
+  }
+}</declaration>
+		<location id="id9" x="-280" y="119">
+			<name x="-289" y="136">track_train_running</name>
+		</location>
+		<location id="id10" x="-280" y="-51">
+			<name x="-290" y="-85">track_check_over</name>
+		</location>
+		<location id="id11" x="-442" y="59">
+			<name x="-485" y="68">track_Unoccupied</name>
+		</location>
+		<location id="id12" x="-442" y="-153">
+			<name x="-452" y="-187">track_Occupied</name>
+		</location>
+		<location id="id13" x="-442" y="-42">
+			<name x="-425" y="-51">Check_track</name>
+		</location>
+		<location id="id14" x="-612" y="-42">
+			<name x="-688" y="-76">track_orign</name>
+		</location>
+		<location id="id15" x="-612" y="119">
+			<name x="-671" y="136">track_init</name>
+		</location>
+		<init ref="id15"/>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-416" y="34">unoccupied[track_n]!</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-544" y="-17">track_y[track_n]==UNOCCUPIED</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id15"/>
+			<label kind="synchronisation" x="-493" y="127">trainLeave[train_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id9"/>
+			<label kind="synchronisation" x="-272" y="17">trainEnter[train_n]?</label>
+			<label kind="assignment" x="-272" y="34">track_y[track_n]=OCCUPIED</label>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id10"/>
+			<label kind="synchronisation" x="-399" y="-144">occupied[track_n]!</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-536" y="-102">track_y[track_n]==OCCUPIED</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="-603" y="-68">checkoccupied[track_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id14"/>
+			<label kind="assignment" x="-731" y="25">init_track(track_y)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Point</name>
+		<declaration>//道岔
+void init_point(int&amp; point_is_lock[2])
+{
+  for (i : int[0,1]) 
+  {
+    point_is_lock[i] = UNLOCK;
+  }
+}</declaration>
+		<location id="id16" x="-85" y="-59">
+			<name x="-153" y="-42">point_locked</name>
+		</location>
+		<location id="id17" x="-322" y="-59">
+			<name x="-331" y="-42">point_unlocked</name>
+		</location>
+		<location id="id18" x="-476" y="-59">
+			<name x="-484" y="-42">point_init</name>
+		</location>
+		<init ref="id18"/>
+		<transition>
+			<source ref="id16"/>
+			<target ref="id17"/>
+			<label kind="synchronisation" x="-289" y="-161">dounlock[point_n]?</label>
+			<label kind="assignment" x="-314" y="-144">point_is_lock[point_n]=LOCK</label>
+			<nail x="-127" y="-127"/>
+			<nail x="-297" y="-127"/>
+		</transition>
+		<transition>
+			<source ref="id17"/>
+			<target ref="id16"/>
+			<label kind="synchronisation" x="-272" y="-102">dolock[point_n]?</label>
+			<label kind="assignment" x="-306" y="-85">point_is_lock[point_n]=UNLOCK</label>
+		</transition>
+		<transition>
+			<source ref="id18"/>
+			<target ref="id17"/>
+			<label kind="assignment" x="-476" y="-93">init_point(point_is_lock)</label>
+		</transition>
+	</template>
+	<template>
+		<name>Control_Center</name>
+		<declaration>//控制中心
+
+//point_is_lock==1 道岔先锁，之后再亮绿灯</declaration>
+		<location id="id19" x="-25373" y="-756">
+			<name x="-25399" y="-790">red_ing</name>
+		</location>
+		<location id="id20" x="-25509" y="-756">
+			<name x="-25519" y="-790">open_red</name>
+		</location>
+		<location id="id21" x="-25696" y="-654">
+			<name x="-25823" y="-654">train_leave_track</name>
+		</location>
+		<location id="id22" x="-25696" y="-560">
+			<name x="-25789" y="-569">train_runing</name>
+		</location>
+		<location id="id23" x="-25696" y="-467">
+			<name x="-25823" y="-484">train_enter_track</name>
+		</location>
+		<location id="id24" x="-25501" y="-467">
+			<name x="-25518" y="-458">green_ok</name>
+			<label kind="invariant" x="-25518" y="-441">green_open_time&lt;4</label>
+		</location>
+		<location id="id25" x="-25314" y="-467">
+			<name x="-25331" y="-458">green_ing</name>
+		</location>
+		<location id="id26" x="-25152" y="-467">
+			<name x="-25220" y="-450">check_point_over</name>
+			<label kind="invariant" x="-25212" y="-433">light_time&lt;21</label>
+		</location>
+		<location id="id27" x="-24931" y="-577">
+			<name x="-24973" y="-569">judge_point_exist</name>
+			<label kind="invariant" x="-24973" y="-552">light_time&lt;21
+&amp;&amp;check_track_time&lt;4</label>
+		</location>
+		<location id="id28" x="-24931" y="-654">
+			<name x="-24906" y="-679">check_track</name>
+			<label kind="invariant" x="-24906" y="-654">light_time&lt;21</label>
+		</location>
+		<location id="id29" x="-24931" y="-756">
+			<name x="-24906" y="-790">train_wait</name>
+			<label kind="invariant" x="-24906" y="-764">light_time&lt;21</label>
+		</location>
+		<location id="id30" x="-25229" y="-756">
+			<name x="-25280" y="-798">change_step</name>
+			<label kind="invariant" x="-25288" y="-815">red_open_time&lt;4</label>
+		</location>
+		<location id="id31" x="-25135" y="-756">
+			<name x="-25152" y="-799">Orign</name>
+			<label kind="invariant" x="-25161" y="-815">check_track_time&lt;4</label>
+		</location>
+		<location id="id32" x="-24871" y="-467">
+			<name x="-24914" y="-501">point_locking</name>
+		</location>
+		<location id="id33" x="-25041" y="-467">
+			<name x="-25091" y="-535">point_lock_over</name>
+			<label kind="invariant" x="-25092" y="-518">light_time&lt;21
+&amp;&amp;lock_time&lt;4</label>
+		</location>
+		<location id="id34" x="-24727" y="-467">
+			<name x="-24710" y="-501">track_free</name>
+			<label kind="invariant" x="-24710" y="-484">light_time&lt;21
+&amp;&amp;check_track_time&lt;4</label>
+		</location>
+		<location id="id35" x="-25900" y="-756">
+			<name x="-25916" y="-790">unlock_point</name>
+		</location>
+		<location id="id36" x="-25764" y="-756">
+			<name x="-25798" y="-790">point_unlocking</name>
+		</location>
+		<location id="id37" x="-25636" y="-756">
+			<name x="-25670" y="-798">point_unlock_over</name>
+			<label kind="invariant" x="-25670" y="-815">unlock_time&lt;4</label>
+		</location>
+		<init ref="id31"/>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id34"/>
+			<label kind="guard" x="-24888" y="-603">use_point==POINT</label>
+			<nail x="-24727" y="-577"/>
+		</transition>
+		<transition>
+			<source ref="id27"/>
+			<target ref="id26"/>
+			<label kind="guard" x="-25134" y="-577">use_point==NO_POINT</label>
+			<nail x="-25152" y="-577"/>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id20"/>
+			<label kind="guard" x="-25670" y="-679">use_point==NO_POINT</label>
+			<nail x="-25509" y="-654"/>
+		</transition>
+		<transition>
+			<source ref="id21"/>
+			<target ref="id35"/>
+			<label kind="guard" x="-25891" y="-679">use_point==POINT</label>
+			<nail x="-25900" y="-654"/>
+		</transition>
+		<transition>
+			<source ref="id37"/>
+			<target ref="id20"/>
+		</transition>
+		<transition>
+			<source ref="id36"/>
+			<target ref="id37"/>
+			<label kind="guard" x="-25755" y="-747">point_is_lock[point_n]==0</label>
+		</transition>
+		<transition>
+			<source ref="id33"/>
+			<target ref="id26"/>
+		</transition>
+		<transition>
+			<source ref="id19"/>
+			<target ref="id30"/>
+			<label kind="synchronisation" x="-25347" y="-739">red[light_n]?</label>
+			<label kind="assignment" x="-25365" y="-756">check_track_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id20"/>
+			<target ref="id19"/>
+			<label kind="synchronisation" x="-25492" y="-739">dored[light_n]!</label>
+			<label kind="assignment" x="-25501" y="-756">red_open_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id22"/>
+			<target ref="id21"/>
+			<label kind="guard" x="-25687" y="-620">train_run_time&lt;200</label>
+			<label kind="synchronisation" x="-25687" y="-603">trainLeave[train_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id23"/>
+			<target ref="id22"/>
+			<label kind="assignment" x="-25806" y="-526">train_run_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id24"/>
+			<target ref="id23"/>
+			<label kind="guard" x="-25654" y="-492">trainenter_time&lt;10</label>
+			<label kind="synchronisation" x="-25653" y="-509">trainEnter[train_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id25"/>
+			<target ref="id24"/>
+			<label kind="guard" x="-25492" y="-509">light_is[light_n]==green_on</label>
+			<label kind="assignment" x="-25475" y="-492">trainenter_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id26"/>
+			<target ref="id25"/>
+			<label kind="synchronisation" x="-25288" y="-509">dogreen[light_n]!</label>
+			<label kind="assignment" x="-25288" y="-492">green_open_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id27"/>
+			<label kind="synchronisation" x="-25076" y="-628">unoccupied[track_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id28"/>
+			<target ref="id31"/>
+			<label kind="synchronisation" x="-25127" y="-705">occupied[track_n]?</label>
+		</transition>
+		<transition>
+			<source ref="id29"/>
+			<target ref="id28"/>
+			<label kind="synchronisation" x="-24923" y="-730">checkoccupied[track_n]!</label>
+			<label kind="assignment" x="-24923" y="-713">check_track_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id31"/>
+			<target ref="id29"/>
+			<label kind="synchronisation" x="-25101" y="-781">trainRequest[train_n]?</label>
+			<label kind="assignment" x="-25076" y="-756">light_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id30"/>
+			<target ref="id31"/>
+			<label kind="synchronisation" x="-25220" y="-756">next_step!</label>
+		</transition>
+		<transition>
+			<source ref="id32"/>
+			<target ref="id33"/>
+			<label kind="guard" x="-25024" y="-458">point_is_lock[point_n]==1</label>
+		</transition>
+		<transition>
+			<source ref="id34"/>
+			<target ref="id32"/>
+			<label kind="synchronisation" x="-24846" y="-467">dolock[point_n]!</label>
+			<label kind="assignment" x="-24837" y="-450">lock_time=0</label>
+		</transition>
+		<transition>
+			<source ref="id35"/>
+			<target ref="id36"/>
+			<label kind="synchronisation" x="-25891" y="-739">dounlock[point_n]!</label>
+			<label kind="assignment" x="-25874" y="-756">unlock_time=0</label>
+		</transition>
+	</template>
+	<template>
+		<name>RoutTable</name>
+		<declaration>//监视器
+//state0 初始状态
+//state1 设置火车0，信号灯0，轨道0，没有道岔，开始执行火车0进入轨道0
+//state2 火车0 已经进入轨道0 结束
+//state3 设置火车1，信号灯0，轨道0，没有道岔，开始执行火车1进入轨道0
+//state4 火车1 已经进入轨道0 结束
+
+//state5 设置火车0，信号灯1，轨道1，没有道岔，开始执行火车0进入轨道1
+//state6 火车0 已经进入轨道1 结束
+//state7 设置火车1，信号灯1，轨道1，没有道岔，开始执行火车1进入轨道1
+//state8 火车1 已经进入轨道1 结束
+
+//state9 设置火车0，信号灯4，轨道4，有道岔0，开始执行火车0，通过道岔0，进入轨道4
+//state10 火车0，通过道岔0，已经进入轨道4 结束
+//state11 设置火车1，信号灯2，轨道2，没有道岔，开始执行火车1进入轨道2
+//state12 火车1 已经进入轨道2 结束
+
+//state13 设置火车0，信号灯5，轨道3，有道岔1，开始执行火车0，通过道岔1，进入轨道3
+//state14 火车0，通过道岔1，已经进入轨道3 结束
+//state15 设置火车1，信号灯3，轨道3，没有道岔，开始执行火车1进入轨道3
+//state0 回到初始状态</declaration>
+		<location id="id38" x="-348" y="-365">
+			<name x="-365" y="-408">State11</name>
+		</location>
+		<location id="id39" x="-255" y="-365">
+			<name x="-306" y="-408">State10</name>
+		</location>
+		<location id="id40" x="-816" y="-484">
+			<name x="-841" y="-467">State3</name>
+		</location>
+		<location id="id41" x="-918" y="-484">
+			<name x="-909" y="-467">State2</name>
+		</location>
+		<location id="id42" x="-918" y="-365">
+			<name x="-909" y="-408">State1</name>
+		</location>
+		<location id="id43" x="-816" y="-365">
+			<name x="-833" y="-408">State0</name>
+		</location>
+		<location id="id44" x="-620" y="-484">
+			<name x="-646" y="-467">State5</name>
+		</location>
+		<location id="id45" x="-705" y="-484">
+			<name x="-722" y="-467">State4</name>
+		</location>
+		<location id="id46" x="-442" y="-484">
+			<name x="-459" y="-467">State7</name>
+		</location>
+		<location id="id47" x="-527" y="-484">
+			<name x="-544" y="-467">State6</name>
+		</location>
+		<location id="id48" x="-255" y="-484">
+			<name x="-306" y="-467">State9</name>
+		</location>
+		<location id="id49" x="-348" y="-484">
+			<name x="-365" y="-467">State8</name>
+		</location>
+		<location id="id50" x="-528" y="-365">
+			<name x="-544" y="-408">State13</name>
+		</location>
+		<location id="id51" x="-442" y="-365">
+			<name x="-459" y="-408">State12</name>
+		</location>
+		<location id="id52" x="-706" y="-365">
+			<name x="-722" y="-408">State15</name>
+		</location>
+		<location id="id53" x="-620" y="-365">
+			<name x="-637" y="-408">State14</name>
+		</location>
+		<init ref="id43"/>
+		<transition>
+			<source ref="id52"/>
+			<target ref="id43"/>
+			<label kind="synchronisation" x="-790" y="-390">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id50"/>
+			<target ref="id53"/>
+			<label kind="synchronisation" x="-603" y="-390">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id38"/>
+			<target ref="id51"/>
+			<label kind="synchronisation" x="-425" y="-390">next_step?</label>
+			<nail x="-382" y="-365"/>
+		</transition>
+		<transition>
+			<source ref="id39"/>
+			<target ref="id38"/>
+			<label kind="assignment" x="-331" y="-356">train_n=1,
+light_n=2,
+track_n=2,
+use_point=NO_POINT</label>
+		</transition>
+		<transition>
+			<source ref="id48"/>
+			<target ref="id39"/>
+			<label kind="synchronisation" x="-331" y="-433">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id46"/>
+			<target ref="id49"/>
+			<label kind="synchronisation" x="-425" y="-484">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id44"/>
+			<target ref="id47"/>
+			<label kind="synchronisation" x="-603" y="-484">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id40"/>
+			<target ref="id45"/>
+			<label kind="synchronisation" x="-790" y="-484">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id41"/>
+			<target ref="id40"/>
+			<label kind="assignment" x="-901" y="-552">train_n=1,
+light_n=0,
+track_n=0</label>
+		</transition>
+		<transition>
+			<source ref="id42"/>
+			<target ref="id41"/>
+			<label kind="synchronisation" x="-909" y="-433">next_step?</label>
+		</transition>
+		<transition>
+			<source ref="id43"/>
+			<target ref="id42"/>
+			<label kind="assignment" x="-892" y="-357">train_n=0,
+light_n=0,
+track_n=0,
+use_point=NO_POINT</label>
+		</transition>
+		<transition>
+			<source ref="id45"/>
+			<target ref="id44"/>
+			<label kind="assignment" x="-697" y="-552">train_n=0,
+light_n=1,
+track_n=1</label>
+		</transition>
+		<transition>
+			<source ref="id47"/>
+			<target ref="id46"/>
+			<label kind="assignment" x="-518" y="-552">train_n=1,
+light_n=1,
+track_n=1</label>
+		</transition>
+		<transition>
+			<source ref="id49"/>
+			<target ref="id48"/>
+			<label kind="assignment" x="-340" y="-595">train_n=0,
+light_n=4,
+track_n=4,
+point_n=0,
+use_point=POINT</label>
+		</transition>
+		<transition>
+			<source ref="id51"/>
+			<target ref="id50"/>
+			<label kind="assignment" x="-510" y="-356">train_n=0,
+light_n=5,
+track_n=3,
+point_n=1,
+use_point=POINT</label>
+		</transition>
+		<transition>
+			<source ref="id53"/>
+			<target ref="id52"/>
+			<label kind="assignment" x="-688" y="-356">train_n=1,
+light_n=3,
+track_n=3,
+use_point=NO_POINT</label>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+train=Train();
+light=Light();
+track=Track();
+point=Point();
+controller=Control_Center();
+routtable=RoutTable();
+// List one or more processes to be composed into a system.
+system train, track&lt;point&lt;light&lt;controller&lt;routtable;
+    </system>
+	<queries>
+		<query>
+			<formula>E&lt;&gt;  controller.change_step
+			</formula>
+			<comment>
+			</comment>
+		</query>
+	</queries>
+</nta>
