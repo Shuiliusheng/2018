@@ -1,0 +1,6 @@
+Automaton modeling
+use uppaal software to model the problem "Train interlock system"
+1. uppaal-4.1.19 is the software, it need java environment support
+2. problem1.xml and problem2.xml are the models for the two problem, they will be opened by uppaal
+3. requires. problem description
+4. reports. experiment description
