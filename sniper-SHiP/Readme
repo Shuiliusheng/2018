@@ -1,3 +1,8 @@
 sniper realize one cache replacement policy according to the paper SHiP (micro 2010)
-1. the file called "code.zip" is all sniper codes, which can be runned in linux directly.  
-2. 
+1. the file called "code.zip" is part codes of sinper, which includes all the modified file.  
+2. "experiment raw data.zip" is the sniper reports after running.
+3. "experiment data.zip" is the file sort out from the raw data.
+4. "micro2011-SHiP" is the papar that this project follow.
+5. "benchmark test scripts" is the scripts to run splash2 test file sets in sniper benchmark file.
+6. "reports" is the ppt to report this experiment.
+7. "sniper installation" is the file to help you install sniper
