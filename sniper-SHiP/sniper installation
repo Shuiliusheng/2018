@@ -1,0 +1,28 @@
+http://blog.csdn.net/shuiliusheng/article/details/79105000
+1. sniper的安装步骤
+
+    安装环境：ubuntu14.04， gcc 4.8.4（gcc版本尽可能不超过这个版本）
+    git clone  http://snipersim.org/download/42f517eddcf77bfe/git/sniper.git
+    wget http://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-71313-gcc.4.4.7-linux.tar.gz
+    pin解压缩到sniper/pin_kit 
+    export SNIPER_TARGET_ARCH=ia32 # default: intel64 (or update Makefile.config)
+    sudo apt-get install libc6-dev-i386 
+    sudo apt-get install g++-4.4-multilib 
+    sudo apt-get install lib32z1-dev 
+    make # or use 'make -j N' where N is the number of cores in your machine to use parallel make
+    cd test/fft
+    make run
+    说明：最后两个步骤用于测试sniper是否安装成功，sniper会使用默认配置运行fft测试样例。如果安装成功，fft文件夹中会出现sim.*文件和viz的文件夹，这些文件为模拟运行之后的分析结果。
+    官网链接：http://snipersim.org/w/Getting_Started
+    sniper-manual：http://snipersim.org/w/Manual
+    
+    
+2. sniper的文件结构
+
+    /sniper/test：sniper自带的测试文件，带有Makefile，配置文件为默认的gainestown
+    /sniper/config：sniper的配置文件，*.cfg。默认均使用gainestown配置文件。gainestown.cfg会包含nehalem.cfg文件，nehalem.cfg包含base.cfg文件
+    /sniper/common/core/memory_subsystem：包含sniper的存储系统的实现
+    /sniper/pin/pin_sim.cc：sniper模拟器的开始，main函数在此文件中
+    /sniper/run-sniper：python脚本。sniper编译之后生成的文件，包含配置参数，例如输出目录，配置文件的读入等
+    sim.out：程序模拟完成之后的分析报告
+    sim.cfg：指明当前程序的模拟环境
