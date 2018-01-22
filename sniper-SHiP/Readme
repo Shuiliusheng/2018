@@ -6,3 +6,4 @@ sniper realize one cache replacement policy according to the paper SHiP (micro 2
 5. "benchmark test scripts" is the scripts to run splash2 test file sets in sniper benchmark file.
 6. "reports" is the ppt to report this experiment.
 7. "sniper installation" is the file to help you install sniper
+8. "sort out data program" read and pre-process data from those raw data files
