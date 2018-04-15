@@ -1,0 +1,3 @@
+Query device information
+
+compiler: g++ info.cpp -o run -lOpenCL
