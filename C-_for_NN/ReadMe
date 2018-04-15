@@ -1,0 +1,2 @@
+This directory includes some project about NN, like Autoencoder, Minist_number_detect, Convolution_and_Pooling, by using C++.
+Some prj will use opencv to read data and save image for network
