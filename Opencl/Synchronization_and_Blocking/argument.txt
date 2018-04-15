@@ -1,0 +1,40 @@
+RUN ARGUMENTS
+./run kernel_name -b1/-b2/-b12/-ub 
+				  -wwl/-uwwl 
+				  -wwe/-uwwe 
+				  -ewl/-uewl 
+				  -war/-uwar
+				  -rwl/-urwl 
+				  -rb/-urb 
+				  -d
+EXPLANATION
+-b1/-b2/-b12/-ub (block)
+	-b1:  Write Buffer1 use Block mode, while Buffer2 use UnBlock mode
+	-b2:  Write Buffer1 use UnBlock mode, while Buffer2 use Block mode
+	-b12: Write Buffer1 and Buffer2 all use Block mode
+	-ub:  Write Buffer1 and Buffer2 all use UnBlock mode
+-wwl/-uwwl (Write buffer use Wait event List)
+	-wwl: clEnqueueWriteBuffer(Buffer2) use wait list for Buffer1 Write event
+	-uwwl:clEnqueueWriteBuffer(Buffer2) don't use wait list
+	
+-wwe/-uwwe (Wait for all Write buffer Events)
+	-wwe: Use clWaitForEvents() wait two Write Events completed
+	-uwwe:Don't use this function
+	
+-ewl/-uewl (EnqueueNDRangeKernel use Wait events List)
+	-ewl: clEnqueueNDRangeKernel(Kernel2) use wait list for Kernel1 Run event
+	-uewl:clEnqueueNDRangeKernel(Kernel2) don't use wait list
+	
+-war/-uwar (Wait All kernel Run events)
+	-war: Use clWaitForEvents() wait two Kernel Run Events completed
+	-uwar:Don't use this function
+	
+-rwl/-urwl (Read buffer use Wait events List )
+	-rwe: clEnqueueReadBuffer(pDeviceBuffer) use wait list for Kernel2 Run event
+	-urwl:clEnqueueReadBuffer(pDeviceBuffer) don't use wait list
+	
+-rb/-urb (Read buffer Block)
+	-rb:  Read pDeviceBuffer use Block mode
+	-urb: Read pDeviceBuffer use UnBlock mode
+-d: Print detail information When run
+	
