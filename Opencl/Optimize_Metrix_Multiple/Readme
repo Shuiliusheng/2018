@@ -1,0 +1,7 @@
+Execution parameters: ./run kernel_filename metric_size runtimes
+
+Kernel_filename: The name of the using kernel
+Metric_size: The size of the matrix
+Runtimes: Number of runs, the average of running hours
+
+./run -D : query whether the device supports double type
