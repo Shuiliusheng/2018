@@ -1,0 +1,5 @@
+How to use:
+./run -h : Get using parameters
+
+This code include opencv, so the compiler choice is:
+g++ code.cpp opencl_code.h -o run `pkg-config --cflags --libs opencv` -lOpenCL
