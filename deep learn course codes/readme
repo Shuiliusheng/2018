@@ -1,0 +1,9 @@
+This dictory includes four topic of deep learn course: 
+1. simple Bp nerual network for minst
+2. simple Convolution network for OxFlowers 17 
+    (http://www.robots.ox.ac.uk/~vgg/data/flowers/17/)
+3. simple RNN/LSTM network for Stanford Sentiment Treebank and aclImdb
+    (https://nlp.stanford.edu/sentiment/)
+    (http://ai.stanford.edu/~amaas/data/sentiment/?spm=a2c4e.11153940.blogcont221671.14.4de510813WjGn3)
+4. a resnet nerual network for Plant Seedlings Classification 
+    (https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge/data)
