@@ -1,0 +1,4 @@
+this dictory contains some c++ codes for several kinds branch predictor.
+the input file is some instructions sequences
+branch:PC taken targetPC
+branch:3077945068 1 3077945097
